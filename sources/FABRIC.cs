@@ -62,18 +62,20 @@ public class FABRIC : MonoBehaviour {
     Chain first;
     Chain second;
     Chain third;
+    Chain chain;
 
 
     // Use this for initialization
     void Start () {
-        //createBase(ref points, ref pointes, ref lines,3);
-        //createBase(ref pointsFirst, ref pointesFirst, ref linesFirst, 4);
         createBaseME(ref pointsFirst, ref pointsSecond, ref pointsThird,
             ref pointesFirst, ref pointesSecond, ref pointesThird,
             ref linesFirst, ref linesSecond, ref linesThird, 3, 3, 3);
         first = new Chain(pointsFirst, pointesFirst, linesFirst,  false, 3);
         second = new Chain(pointsSecond, pointesSecond, linesSecond, true, 3);
         third = new Chain(pointsThird, pointesThird, linesThird, true, 3);
+
+        first.left = third; first.right = second;
+        third.parent = first; second.parent = first;
     }
 
 	// Update is called once per frame
@@ -108,7 +110,7 @@ public class FABRIC : MonoBehaviour {
     {
         
         if (Input.GetMouseButton(0))
-        {
+        { // Запускается всегда для всех. Однако точка на которую наводим должна быть в окрестности эффектора иначе не будет движения
             Vector3 a = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             if (a.x <= new Vector3(chain.points[chain.N-1].X+1f, chain.points[chain.N -1].Y+1f).x && a.x >= new Vector3(chain.points[chain.N -1].X - 1f, chain.points[chain.N -1].Y - 1f).x &&
                 a.y <= new Vector3(chain.points[chain.N -1].X + 1f, chain.points[chain.N -1].Y + 1f).y && a.y >= new Vector3(chain.points[chain.N -1].X - 1f, chain.points[chain.N -1].Y - 1f).y) // Для перетягивания
@@ -116,6 +118,7 @@ public class FABRIC : MonoBehaviour {
                 t = new Point(a.x, a.y);
                 //Debug.Log(t.X); Debug.Log(t.Y);
                 newPosition(chain, t);
+                 chain.parent.iwashere = false; chain.parent.left.iwashere = false; chain.parent.right.iwashere = false;
             }
         }
     }
@@ -212,206 +215,124 @@ public class FABRIC : MonoBehaviour {
     float rad = 2.92f; //радиус - длина до суб-базы
     private void newPosition(Chain chain, Point t)
     {
-        float tolerance = 0.001f;
-        int iterCount = 100;
-        float sum_dist = 0;
-        float[] d = new float[chain.N - 1];
-        float[] r = new float[chain.N - 1];
-        float[] la = new float[chain.N - 1];
-        Point[] p = new Point[chain.N];
-        for (int i = 0; i < chain.N; i++)
+        if (chain != null && !chain.iwashere) //washere всегда тру
         {
-            p[i] = chain.points[i];
-        }
-        for (int i = 0; i < chain.N - 1; i++)
-        {
-            float X = p[i + 1].X - p[i].X;
-            float Y = p[i + 1].Y - p[i].Y;
-            Vector3 vec = new Vector3(X, Y, 0);
-            d[i] = vec.magnitude;
-            sum_dist += d[i];
-        }
-        sum_dist += 10.0f; // Можно воткнуть для плавного движения
-        float dist;
-        float tX = p[0].X - t.X;
-        float tY = p[0].Y - t.Y;
-        Vector3 start_to_target = new Vector3(tX, tY, 0);
-        dist = start_to_target.magnitude;
-
-        if (dist > sum_dist)
-        {
-            Debug.Log("Don't reach");
+            chain.iwashere = true;
+            float tolerance = 0.001f;
+            int iterCount = 100;
+            float sum_dist = 0;
+            float[] d = new float[chain.N - 1];
+            float[] r = new float[chain.N - 1];
+            float[] la = new float[chain.N - 1];
+            Point[] p = new Point[chain.N];
+            for (int i = 0; i < chain.N; i++)
+            {
+                p[i] = chain.points[i];
+            }
             for (int i = 0; i < chain.N - 1; i++)
             {
-                float t1X = t.X - p[i].X;
-                float t1Y = t.Y - p[i].Y;
-                Vector3 tempD = new Vector3(t1X, t1Y);
-                r[i] = tempD.magnitude;
-                la[i] = d[i] / r[i];
-                p[i + 1].X = p[i].X * (1 - la[i]) + t.X * la[i];
-                p[i + 1].Y = p[i].Y * (1 - la[i]) + t.Y * la[i];
-                iterCount -= 1;
+                float X = p[i + 1].X - p[i].X;
+                float Y = p[i + 1].Y - p[i].Y;
+                Vector3 vec = new Vector3(X, Y, 0);
+                d[i] = vec.magnitude;
+                sum_dist += d[i];
             }
-        }
-        else
-        {
-            Point b1 = new Point(0, 0);
-            Point b = p[0];
+            sum_dist += 10.0f; // Можно воткнуть для плавного движения
+            float dist;
+            float tX = p[0].X - t.X;
+            float tY = p[0].Y - t.Y;
+            Vector3 start_to_target = new Vector3(tX, tY, 0);
+            dist = start_to_target.magnitude;
 
-            Vector3 pt = new Vector3(p[chain.N - 1].X - t.X, p[chain.N - 1].Y - t.Y);
-            float difA = pt.magnitude;
-            while ((difA > tolerance) && (iterCount != 0)) //Сравнение нормы или количества итераций
+            if (dist > sum_dist)
             {
-                p[chain.N - 1] = t;
-                for (int i = chain.N - 2; i >= 0; i--)
-                {
-                    Vector3 tempD = new Vector3(p[i + 1].X - p[i].X, p[i + 1].Y - p[i].Y);
-                    r[i] = tempD.magnitude;
-                    la[i] = d[i] / r[i];
-                    p[i].X = p[i + 1].X * (1 - la[i]) + p[i].X * la[i];
-                    p[i].Y = p[i + 1].Y * (1 - la[i]) + p[i].Y * la[i];
-                }
-                if (chain.isChild)
-                {
-                    float difX = p[0].X - b1.X;
-                    float difY = p[0].Y - b1.Y;
-                    Vector3 vec = new Vector3(difX, difY, 0);
-                    float temp_rad = vec.magnitude;
-                    Point temp = p[0];
-                    if (temp_rad > rad)// Вот тут временный костыль, который можно пофиксить геометрией
-                    {//
-
-                        while (temp_rad > rad) // Вот это всё надо, чтобы аффектор мог двигаться с некоторым запасом от центра.
-                        {
-                            float tempdifX = temp.X > 0 ? -0.05f : 0.05f;
-                            float tempdifY = temp.Y > 0 ? -0.05f : 0.05f;
-                            temp.X = temp.X + tempdifX; //whoitare
-                            temp.Y = temp.Y + tempdifY;
-                            difX = temp.X - b1.X;
-                            difY = temp.Y - b1.Y;
-                            vec = new Vector3(difX, difY, 0);
-                            temp_rad = vec.magnitude;
-                        }
-                    }
-                    p[0] = temp;//Тут можно ставить новую точку суб-базы
-                }
-                else
-                    p[0] = b;
+                Debug.Log("Don't reach");
                 for (int i = 0; i < chain.N - 1; i++)
                 {
-                    Vector3 tempD = new Vector3(p[i + 1].X - p[i].X, p[i + 1].Y - p[i].Y);
+                    float t1X = t.X - p[i].X;
+                    float t1Y = t.Y - p[i].Y;
+                    Vector3 tempD = new Vector3(t1X, t1Y);
                     r[i] = tempD.magnitude;
                     la[i] = d[i] / r[i];
-                    p[i + 1].X = p[i].X * (1 - la[i]) + p[i + 1].X * la[i];
-                    p[i + 1].Y = p[i].Y * (1 - la[i]) + p[i + 1].Y * la[i];
+                    p[i + 1].X = p[i].X * (1 - la[i]) + t.X * la[i];
+                    p[i + 1].Y = p[i].Y * (1 - la[i]) + t.Y * la[i];
+                    iterCount -= 1;
                 }
-                pt = new Vector3(p[chain.N - 1].X - t.X, p[chain.N - 1].Y - t.Y);
-                difA = pt.magnitude;
-                iterCount -= 1;
-                if (chain.isChild)
-                {
-                    newPosition(first, p[0]);
-                    Point[] thirdPointReversed = third.reverse();
-                    Point[] secondPointReversed = second.reverse();
-                    
+            }
+            else
+            {
+                Point b1 = new Point(0, 0);
+                Point b = p[0];
 
-                    //pointsThird[0] = p[0];
+                Vector3 pt = new Vector3(p[chain.N - 1].X - t.X, p[chain.N - 1].Y - t.Y);
+                float difA = pt.magnitude;
+                while ((difA > tolerance) && (iterCount != 0)) //Сравнение нормы или количества итераций
+                {
+                    p[chain.N - 1] = t;
+                    for (int i = chain.N - 2; i >= 0; i--)
+                    {
+                        Vector3 tempD = new Vector3(p[i + 1].X - p[i].X, p[i + 1].Y - p[i].Y);
+                        r[i] = tempD.magnitude;
+                        la[i] = d[i] / r[i];
+                        p[i].X = p[i + 1].X * (1 - la[i]) + p[i].X * la[i];
+                        p[i].Y = p[i + 1].Y * (1 - la[i]) + p[i].Y * la[i];
+                    }
+                    if (chain.isChild)
+                    {
+                        float difX = p[0].X - b1.X;
+                        float difY = p[0].Y - b1.Y;
+                        Vector3 vec = new Vector3(difX, difY, 0);
+                        float temp_rad = vec.magnitude;
+                        Point temp = p[0];
+                        if (temp_rad > rad)// Вот тут временный костыль, который можно пофиксить геометрией
+                        {
+                            while (temp_rad > rad) // Вот это всё надо, чтобы аффектор мог двигаться с некоторым запасом от центра.
+                            {
+                                float tempdifX = temp.X > 0 ? -0.05f : 0.05f;
+                                float tempdifY = temp.Y > 0 ? -0.05f : 0.05f;
+                                temp.X = temp.X + tempdifX; //whoitare
+                                temp.Y = temp.Y + tempdifY;
+                                difX = temp.X - b1.X;
+                                difY = temp.Y - b1.Y;
+                                vec = new Vector3(difX, difY, 0);
+                                temp_rad = vec.magnitude;
+                            }
+                        }
+                        p[0] = temp;//Тут можно ставить новую точку суб-базы
+                    }
+                    else
+                        p[0] = b;
                     for (int i = 0; i < chain.N - 1; i++)
                     {
-                        Vector3 tempointsThirdD = new Vector3(pointsThird[i + 1].X - pointsThird[i].X, pointsThird[i + 1].Y - pointsThird[i].Y);
-                        r[i] = tempointsThirdD.magnitude;
+                        Vector3 tempD = new Vector3(p[i + 1].X - p[i].X, p[i + 1].Y - p[i].Y);
+                        r[i] = tempD.magnitude;
                         la[i] = d[i] / r[i];
-                        pointsThird[i + 1].X = pointsThird[i].X * (1 - la[i]) + pointsThird[i + 1].X * la[i];
-                        pointsThird[i + 1].Y = pointsThird[i].Y * (1 - la[i]) + pointsThird[i + 1].Y * la[i];
+                        p[i + 1].X = p[i].X * (1 - la[i]) + p[i + 1].X * la[i];
+                        p[i + 1].Y = p[i].Y * (1 - la[i]) + p[i + 1].Y * la[i];
                     }
+                    pt = new Vector3(p[chain.N - 1].X - t.X, p[chain.N - 1].Y - t.Y);
+                    difA = pt.magnitude;
+                    iterCount -= 1;
+                }
+                Point[] leftPoints; Point[] rightPoints;
+                newPosition(chain.parent, p[0]);
+                if (chain.left != null)
+                {   leftPoints = chain.left.reverse(); chain.left.points = leftPoints; 
+                    newPosition(chain.left, p[2]);
+                    chain.left.points = chain.left.reverse();
+                }
+                if (chain.right != null)
+                {   rightPoints = chain.right.reverse(); chain.right.points = rightPoints; 
+                    newPosition(chain.right, p[2]);
+                    chain.right.points = chain.right.reverse();
                 }
             }
-        }
-        for (int i = 0; i < chain.N; i++)
-        {
-            chain.points[i] = p[i];
+            for (int i = 0; i < chain.N; i++)
+            {
+                chain.points[i] = p[i];
+            }
         }
     }
-
-    private void newPositionOneEffector(Chain chain, Point t)
-    {
-        float tolerance = 0.001f;
-        int iterCount = 100;
-        float sum_dist = 0;
-        float[] d = new float[chain.N - 1];
-        float[] r = new float[chain.N - 1];
-        float[] la = new float[chain.N - 1];
-        Point[] p = new Point[chain.N];
-        for (int i = 0; i < chain.N; i++)
-        {
-            p[i] = chain.points[i];
-        }
-        for (int i = 0; i < chain.N - 1; i++)
-        {
-            float X = p[i + 1].X - p[i].X;
-            float Y = p[i + 1].Y - p[i].Y;
-            Vector3 vec = new Vector3(X, Y, 0);
-            d[i] = vec.magnitude;
-            sum_dist += d[i];
-        }
-        float dist;
-        float tX = p[0].X - t.X;
-        float tY = p[0].Y - t.Y;
-        Vector3 start_to_target = new Vector3(tX, tY, 0);
-        dist = start_to_target.magnitude;
-
-        if (dist > sum_dist)
-        {
-            Debug.Log("Don't reach");
-            for (int i = 0; i < chain.N - 1; i++)
-            {
-                float t1X = t.X - p[i].X;
-                float t1Y = t.Y - p[i].Y;
-                Vector3 tempD = new Vector3(t1X, t1Y);
-                r[i] = tempD.magnitude;
-                la[i] = d[i] / r[i];
-                p[i + 1].X = p[i].X * (1 - la[i]) + t.X * la[i];
-                p[i + 1].Y = p[i].Y * (1 - la[i]) + t.Y * la[i];
-                iterCount -= 1;
-            }
-        }
-        else
-        {
-            Point b = chain.points[0];
-            Vector3 pt = new Vector3(p[chain.N - 1].X - t.X, p[chain.N - 1].Y - t.Y);
-            float difA = pt.magnitude;
-            while ((difA > tolerance) && (iterCount != 0)) //Сравнение нормы или количества итераций
-            {
-                p[chain.N - 1] = t;
-                for (int i = chain.N - 2; i >= 0; i--)
-                {
-                    Vector3 tempD = new Vector3(p[i + 1].X - p[i].X, p[i + 1].Y - p[i].Y);
-                    r[i] = tempD.magnitude;
-                    la[i] = d[i] / r[i];
-                    p[i].X = p[i + 1].X * (1 - la[i]) + p[i].X * la[i];
-                    p[i].Y = p[i + 1].Y * (1 - la[i]) + p[i].Y * la[i];
-                }
-                p[0] = b;
-                for (int i = 0; i < chain.N - 1; i++)
-                {
-                    Vector3 tempD = new Vector3(p[i + 1].X - p[i].X, p[i + 1].Y - p[i].Y);
-                    r[i] = tempD.magnitude;
-                    la[i] = d[i] / r[i];
-                    p[i + 1].X = p[i].X * (1 - la[i]) + p[i + 1].X * la[i];
-                    p[i + 1].Y = p[i].Y * (1 - la[i]) + p[i + 1].Y * la[i];
-                }
-                pt = new Vector3(p[chain.N - 1].X - t.X, p[chain.N - 1].Y - t.Y);
-                difA = pt.magnitude;
-                iterCount -= 1;
-            }
-        }
-        for (int i = 0; i < chain.N; i++)
-        {
-            chain.points[i] = p[i];
-        }
-    }
-
-
     /// Как вариант, отдельно оформить функции пересчета вперёд и назад
 
 }
