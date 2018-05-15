@@ -14,6 +14,7 @@ public class Chain {
     public Chain left;
     public Chain right;
     public bool iwashere;
+    public bool isReversed;
 
 
 

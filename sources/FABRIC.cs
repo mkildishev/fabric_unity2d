@@ -62,7 +62,6 @@ public class FABRIC : MonoBehaviour {
     Chain first;
     Chain second;
     Chain third;
-    Chain chain;
 
 
     // Use this for initialization
@@ -76,6 +75,7 @@ public class FABRIC : MonoBehaviour {
 
         first.left = third; first.right = second;
         third.parent = first; second.parent = first;
+        first.isReversed = second.isReversed = third.isReversed = false;
     }
 
 	// Update is called once per frame
@@ -237,7 +237,7 @@ public class FABRIC : MonoBehaviour {
                 d[i] = vec.magnitude;
                 sum_dist += d[i];
             }
-            sum_dist += 10.0f; // Можно воткнуть для плавного движения
+            sum_dist += 1.0f; // Можно воткнуть для плавного движения
             float dist;
             float tX = p[0].X - t.X;
             float tY = p[0].Y - t.Y;
@@ -284,13 +284,14 @@ public class FABRIC : MonoBehaviour {
                         Vector3 vec = new Vector3(difX, difY, 0);
                         float temp_rad = vec.magnitude;
                         Point temp = p[0];
-                        if (temp_rad > rad)// Вот тут временный костыль, который можно пофиксить геометрией
-                        {
-                            while (temp_rad > rad) // Вот это всё надо, чтобы аффектор мог двигаться с некоторым запасом от центра.
+                        if (temp_rad > rad && !chain.isReversed)// Вот тут временный костыль, который можно пофиксить геометрией
+                        { //Система сделана в целях калибровки первой точки у границы. Есть заходит за границу - калибруем. Если реверсировали, то 
+                            //калибровка излишняя, поскольку всё и так хорошо
+                            while (temp_rad > rad)
                             {
                                 float tempdifX = temp.X > 0 ? -0.05f : 0.05f;
                                 float tempdifY = temp.Y > 0 ? -0.05f : 0.05f;
-                                temp.X = temp.X + tempdifX; //whoitare
+                                temp.X = temp.X + tempdifX;
                                 temp.Y = temp.Y + tempdifY;
                                 difX = temp.X - b1.X;
                                 difY = temp.Y - b1.Y;
@@ -298,7 +299,9 @@ public class FABRIC : MonoBehaviour {
                                 temp_rad = vec.magnitude;
                             }
                         }
-                        p[0] = temp;//Тут можно ставить новую точку суб-базы
+                        p[0] = temp;//p[0] - конечная точка и будет в любом случае той, которую уже посчитали. Потому она может как свободно болтаться
+                        //Аффектор-ведомый на время пересчёта становится обычной точкой и точно не может зайти за границу
+                        //А если не ведущий, то мы однозначно отбросим точку от границы
                     }
                     else
                         p[0] = b;
@@ -314,17 +317,23 @@ public class FABRIC : MonoBehaviour {
                     difA = pt.magnitude;
                     iterCount -= 1;
                 }
-                Point[] leftPoints; Point[] rightPoints;
+                
                 newPosition(chain.parent, p[0]);
                 if (chain.left != null)
-                {   leftPoints = chain.left.reverse(); chain.left.points = leftPoints; 
+                {
+                    chain.left.points = chain.left.reverse();
+                    chain.left.isReversed = true;
                     newPosition(chain.left, p[2]);
                     chain.left.points = chain.left.reverse();
+                    chain.left.isReversed = false;
                 }
                 if (chain.right != null)
-                {   rightPoints = chain.right.reverse(); chain.right.points = rightPoints; 
+                {
+                    chain.right.points = chain.right.reverse();
+                    chain.right.isReversed = true;
                     newPosition(chain.right, p[2]);
                     chain.right.points = chain.right.reverse();
+                    chain.right.isReversed = false;
                 }
             }
             for (int i = 0; i < chain.N; i++)
