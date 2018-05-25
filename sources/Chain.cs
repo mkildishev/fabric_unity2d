@@ -15,6 +15,7 @@ public class Chain {
     public Chain right;
     public bool iwashere;
     public bool isReversed;
+    public double rad;
 
 
 
@@ -30,6 +31,7 @@ public class Chain {
         left = _left;
         right = _right;
         iwashere = false;
+        rad = 0;
     }
 
 

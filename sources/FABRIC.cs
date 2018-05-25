@@ -50,18 +50,27 @@ public class FABRIC : MonoBehaviour {
     Point[] pointsFirst = new Point[3];
     Point[] pointsSecond = new Point[3];
     Point[] pointsThird = new Point[3];
+    Point[] pointsFourth = new Point[4];
+    Point[] pointsFiveth = new Point[5];
 
     GameObject[] linesFirst = new GameObject[2];
     GameObject[] linesSecond = new GameObject[2];
     GameObject[] linesThird = new GameObject[2];
-    
+    GameObject[] linesFourth = new GameObject[3];
+    GameObject[] linesFiveth= new GameObject[4];
+
 
     GameObject[] pointesFirst = new GameObject[3];
     GameObject[] pointesSecond = new GameObject[3];
     GameObject[] pointesThird = new GameObject[3];
+    GameObject[] pointesFourth = new GameObject[4];
+    GameObject[] pointesFiveth = new GameObject[5];
+
     Chain first;
     Chain second;
     Chain third;
+    Chain fourth;
+    Chain fiveth;
 
 
     // Use this for initialization
@@ -69,22 +78,34 @@ public class FABRIC : MonoBehaviour {
         createBaseME(ref pointsFirst, ref pointsSecond, ref pointsThird,
             ref pointesFirst, ref pointesSecond, ref pointesThird,
             ref linesFirst, ref linesSecond, ref linesThird, 3, 3, 3);
+        //createBase(ref pointsFirst, ref pointesFirst, ref linesFirst, 3);
         first = new Chain(pointsFirst, pointesFirst, linesFirst,  false, 3);
         second = new Chain(pointsSecond, pointesSecond, linesSecond, true, 3);
         third = new Chain(pointsThird, pointesThird, linesThird, true, 3);
+        fourth = new Chain(pointsFourth, pointesFourth, linesFourth, true, 4);
+        fiveth = new Chain(pointsFiveth, pointesFiveth, linesFiveth, true, 5);
 
         first.left = third; first.right = second;
         third.parent = first; second.parent = first;
-        first.isReversed = second.isReversed = third.isReversed = false;
+        second.left = fourth; second.right = fiveth; fourth.parent = second; fiveth.parent = second;
+        first.isReversed = second.isReversed = third.isReversed =  fourth.isReversed = fiveth.isReversed = false;
+        second.rad = third.rad = 2.92;
+        fourth.rad = fiveth.rad = 2.89 * 2;
     }
 
 	// Update is called once per frame
 	void Update () {
-        isClicked(second);
+        //isClicked(second);
+        first.iwashere = second.iwashere = third.iwashere = fourth.iwashere = fiveth.iwashere = false;
+        //isClicked(first);
         isClicked(third);
+        isClicked(fourth);
+        isClicked(fiveth);
         WaitAndMoveToNewPos(first);
         WaitAndMoveToNewPos(second);
         WaitAndMoveToNewPos(third);
+        WaitAndMoveToNewPos(fourth);
+        WaitAndMoveToNewPos(fiveth);
     }
 
     private void createBase(ref Point[] _points, ref GameObject[] _pointes, ref GameObject[] _lines, int N)
@@ -118,7 +139,7 @@ public class FABRIC : MonoBehaviour {
                 t = new Point(a.x, a.y);
                 //Debug.Log(t.X); Debug.Log(t.Y);
                 newPosition(chain, t);
-                 chain.parent.iwashere = false; chain.parent.left.iwashere = false; chain.parent.right.iwashere = false;
+                // chain.parent.iwashere = false; chain.parent.left.iwashere = false; chain.parent.right.iwashere = false;
             }
         }
     }
@@ -179,7 +200,7 @@ public class FABRIC : MonoBehaviour {
         _secondPoints[N2 - 1] = new Point(newCircleL1.transform.position.x, newCircleL1.transform.position.y);
         _secondPointes[N2 - 1] = newCircleL1;
 
-        for (int i = 0; i < N2 - 1; i++)
+        for (int i = 0; i < N2 - 1; i++) //Поворот линий наверх
         {
             Vector3 a = _secondPointes[i + 1].transform.position - _secondLines[i].transform.position;
             a.Normalize();
@@ -211,15 +232,49 @@ public class FABRIC : MonoBehaviour {
             _thirdLines[i].transform.rotation = Quaternion.AngleAxis(rot, Vector3.forward);
         }
 
+        for (int x = 0; x < 4 - 1; x++)
+        {
+            GameObject newLineF = Instantiate(line);
+            newLineF.transform.position = new Vector3(add - lineSizeX * (x+1), lineSizeX*(N2-1) , 0);
+            GameObject newCircleF = Instantiate(circle);
+            newCircleF.transform.position = new Vector3(add - lineSizeX * x, lineSizeX * (N2 - 1), 0);
+            pointsFourth[x] = new Point(newCircleF.transform.position.x, newCircleF.transform.position.y);
+            pointesFourth[x] = newCircleF;
+            linesFourth[x] = newLineF;
+        }
+        GameObject newCircleL3 = Instantiate(circle);
+        newCircleL3.transform.position = new Vector3(add - lineSizeX * (3), lineSizeX * (N2 - 1), 0);
+        pointsFourth[3] = new Point(newCircleL3.transform.position.x, newCircleL3.transform.position.y);
+        pointesFourth[3] = newCircleL3;
+
+        for (int x = 0; x < 5 - 1; x++)
+        {
+            GameObject newLineF1 = Instantiate(line);
+            newLineF1.transform.position = new Vector3(add + lineSizeX * (x), lineSizeX * (N2 - 1), 0);
+            GameObject newCircleF1 = Instantiate(circle);
+            newCircleF1.transform.position = new Vector3(add + lineSizeX * x, lineSizeX * (N2 - 1), 0);
+            pointsFiveth[x] = new Point(newCircleF1.transform.position.x, newCircleF1.transform.position.y);
+            pointesFiveth[x] = newCircleF1;
+            linesFiveth[x] = newLineF1;
+        }
+        GameObject newCircleL4 = Instantiate(circle);
+        newCircleL4.transform.position = new Vector3(add + lineSizeX * (5 - 1), lineSizeX * (N2 - 1), 0);
+        pointsFiveth[4] = new Point(newCircleL4.transform.position.x, newCircleL4.transform.position.y);
+        pointesFiveth[4] = newCircleL4;
+
     }
-    float rad = 2.92f; //радиус - длина до суб-базы
+    //float rad = 2.92f; //радиус - длина до суб-базы
     private void newPosition(Chain chain, Point t)
     {
         if (chain != null && !chain.iwashere) //washere всегда тру
         {
+            if (chain.parent != null && chain.parent.isReversed) // Сделано в целях корректного вычисления точки, если цепь-предка реверсировали и неотреверсировали назад
+            {
+                t = chain.parent.points[0];
+            }
             chain.iwashere = true;
             float tolerance = 0.001f;
-            int iterCount = 100;
+            int iterCount = 10000;
             float sum_dist = 0;
             float[] d = new float[chain.N - 1];
             float[] r = new float[chain.N - 1];
@@ -237,7 +292,7 @@ public class FABRIC : MonoBehaviour {
                 d[i] = vec.magnitude;
                 sum_dist += d[i];
             }
-            sum_dist += 1.0f; // Можно воткнуть для плавного движения
+            sum_dist += 5.0f; // Можно воткнуть для плавного движения
             float dist;
             float tX = p[0].X - t.X;
             float tY = p[0].Y - t.Y;
@@ -284,10 +339,10 @@ public class FABRIC : MonoBehaviour {
                         Vector3 vec = new Vector3(difX, difY, 0);
                         float temp_rad = vec.magnitude;
                         Point temp = p[0];
-                        if (temp_rad > rad && !chain.isReversed)// Вот тут временный костыль, который можно пофиксить геометрией
+                        if (temp_rad > chain.rad && !chain.isReversed)// Вот тут временный костыль, который можно пофиксить геометрией
                         { //Система сделана в целях калибровки первой точки у границы. Есть заходит за границу - калибруем. Если реверсировали, то 
                             //калибровка излишняя, поскольку всё и так хорошо
-                            while (temp_rad > rad)
+                            while (temp_rad > chain.rad)
                             {
                                 float tempdifX = temp.X > 0 ? -0.05f : 0.05f;
                                 float tempdifY = temp.Y > 0 ? -0.05f : 0.05f;
@@ -318,23 +373,23 @@ public class FABRIC : MonoBehaviour {
                     iterCount -= 1;
                 }
                 
-                newPosition(chain.parent, p[0]);
-                if (chain.left != null)
-                {
-                    chain.left.points = chain.left.reverse();
-                    chain.left.isReversed = true;
-                    newPosition(chain.left, p[2]);
-                    chain.left.points = chain.left.reverse();
-                    chain.left.isReversed = false;
-                }
-                if (chain.right != null)
-                {
-                    chain.right.points = chain.right.reverse();
-                    chain.right.isReversed = true;
-                    newPosition(chain.right, p[2]);
-                    chain.right.points = chain.right.reverse();
-                    chain.right.isReversed = false;
-                }
+            }
+            newPosition(chain.parent, p[0]);
+            if (chain.left != null)
+            {
+                chain.left.points = chain.left.reverse();
+                chain.left.isReversed = true;
+                newPosition(chain.left, p[2]);
+                chain.left.points = chain.left.reverse(); //Если идём по нереверсивной ветке,то "всё"
+                chain.left.isReversed = false;
+            }
+            if (chain.right != null)
+            {
+                chain.right.points = chain.right.reverse();
+                chain.right.isReversed = true;
+                newPosition(chain.right, p[2]);
+                chain.right.points = chain.right.reverse();
+                chain.right.isReversed = false;
             }
             for (int i = 0; i < chain.N; i++)
             {
